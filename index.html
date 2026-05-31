@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データベース講義資料 完全網羅単語帳</title>
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #166088;
+            --bg-color: #f4f7f6;
+            --card-front-bg: #ffffff;
+            --card-back-bg: #eef4f8;
+            --text-color: #333333;
+            --accent-color: #ff6b6b;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        select, button {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 0.9rem;
+            cursor: pointer;
+            background-color: white;
+            transition: all 0.2s ease;
+        }
+
+        select:focus, button:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        button:hover {
+            background-color: #f0f0f0;
+        }
+
+        button.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .status-container {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            max-width: 600px;
+            height: 6px;
+            background-color: #ddd;
+            border-radius: 3px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        /* 3Dカードのスタイル */
+        .card-container {
+            width: 100%;
+            max-width: 600px;
+            height: 320px;
+            perspective: 1000px;
+            cursor: pointer;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 12px;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            box-sizing: border-box;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .card-front {
+            background-color: var(--card-front-bg);
+            color: var(--text-color);
+        }
+
+        .card-back {
+            background-color: var(--card-back-bg);
+            transform: rotateY(180deg);
+            overflow-y: auto;
+            justify-content: flex-start;
+        }
+
+        .category-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        .word-text {
+            font-size: 1.6rem;
+            font-weight: bold;
+            text-align: center;
+            color: var(--secondary-color);
+            line-height: 1.4;
+        }
+
+        .hint-text {
+            position: absolute;
+            bottom: 20px;
+            font-size: 0.8rem;
+            color: #aaa;
+            animation: pulse 2s infinite;
+        }
+
+        .meaning-text {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #333;
+            width: 100%;
+            margin-top: 15px;
+            white-space: pre-wrap;
+        }
+
+        .meaning-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 5px;
+            width: 100%;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 600px;
+            justify-content: space-between;
+        }
+
+        .nav-buttons button {
+            flex: 1;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .nav-buttons button:hover {
+            background-color: #0f4c6e;
+        }
+
+        .nav-buttons button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* 一覧表示用のスタイル */
+        .list-view {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 30px;
+            display: none;
+        }
+
+        .list-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .list-word {
+            font-weight: bold;
+            color: var(--secondary-color);
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .list-category {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            background: #eee;
+            border-radius: 4px;
+            margin-left: 10px;
+            color: #666;
+        }
+
+        code {
+            background-color: #f1f1f1;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: #c7254e;
+        }
+        
+        pre {
+            background-color: #272822;
+            color: #f8f8f2;
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>データベース講義資料 完全攻略単語帳</h1>
+    </header>
+
+    <div class="controls">
+        <select id="categoryFilter">
+            <option value="all">全分野を表示（全66問）</option>
+            <option value="ERモデル">1. 実体関連モデル（ER図）</option>
+            <option value="関係モデル基礎">2. 関係モデル・整合性制約</option>
+            <option value="関係代数">3. 関係代数演算</option>
+            <option value="関係論理">4. 関係論理（宣言的記述）</option>
+            <option value="SQL基本">5. SQL：DML基本・結合・集約</option>
+            <option value="SQL応用">6. SQL：DDL・更新・ビュー・副問合せ</option>
+        </select>
+        <button id="shuffleBtn">シャuffle（順序を混ぜる）</button>
+        <button id="toggleViewBtn">モード切替（単語帳 / 一覧表示）</button>
+    </div>
+
+    <div id="flashcardMode" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+        <div class="status-container">
+            <span id="cardNumberDisplay">Card: 1 / 66</span>
+            <span id="currentCategoryDisplay">分野: ERモデル</span>
+        </div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="card-container" id="cardContainer">
+            <div class="card" id="card">
+                <div class="card-face card-front">
+                    <span class="category-badge" id="frontCategory">カテゴリ</span>
+                    <div class="word-text" id="frontWord">単語名</div>
+                    <span class="hint-text">画面をタップして意味を表示</span>
+                </div>
+                <div class="card-face card-back">
+                    <span class="category-badge" id="backCategory">カテゴリ</span>
+                    <div class="meaning-title" id="backTitle">単語名</div>
+                    <div class="meaning-text" id="backMeaning">意味・解説</div>
+                    <span class="hint-text" style="position: static; margin-top: 20px; margin-bottom: 0;">画面をタップで表に戻る</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-buttons">
+            <button id="prevBtn">前の単語</button>
+            <button id="prevBtn5" style="flex: 0.3; font-size: 0.8rem;">-5</button>
+            <button id="nextBtn5" style="flex: 0.3; font-size: 0.8rem;">+5</button>
+            <button id="nextBtn">次の単語</button>
+        </div>
+    </div>
+
+    <div class="list-view" id="listView"></div>
+
+    <script>
+        // 大量の全講義資料データ（全66問を完全網羅）
+        const originalCards = [
+            // --- 1. ERモデル ---
+            { category: "ERモデル", word: "実体 (Entity)", meaning: "実世界において識別可能な物体や事象のこと。\n例：特定の従業員「安倍」や特定の部門「開発部」など、他と区別できる具体的なオブジェクト。" },
+            { category: "ERモデル", word: "実体集合 (Entity Set)", meaning: "同様の性質を持つ実体の集まりのこと。ER図上では【長方形】で表される。\n例：すべての従業員の集合である「Employees」など。" },
+            { category: "ERモデル", word: "属性 (Attribute)", meaning: "実体や関連が持つ、具体的な性質や項目のこと。ER図上では【楕円】で表される。\n例：従業員実体が持つ「eid (従業員ID)」「name (氏名)」「lot (内線)」など。" },
+            { category: "ERモデル", word: "定義域 (Domain)", meaning: "ある属性が取り得る値の範囲・データ型のこと。\n例：属性「name」の定義域は「20文字以内の文字列」といった制約。属性値はドメインに属する「原子値（不可分な値）」である必要がある。" },
+            { category: "ERモデル", word: "キー (Key)", meaning: "実体集合の中から、ある1つの実体を一意に識別（特定）することができる属性、または属性の極小集合のこと。" },
+            { category: "ERモデル", word: "候補キー (Candidate Key)", meaning: "実体集合を一意に識別できる属性集合のうち、余分な属性を含まない「極小」なもの。複数存在する場合もある。" },
+            { category: "ERモデル", word: "主キー (Primary Key)", meaning: "複数ある候補キーの中から、データベース設計者が実体を代表して識別するために選んだ主要なキー。ER図内では、属性名に【下線】を引いて明示する。" },
+            { category: "ERモデル", word: "関連 (Relationship)", meaning: "複数個の実体（Entity）の間に存在する、具体的な対応や結びつきのこと。" },
+            { category: "ERモデル", word: "関連集合 (Relationship Set)", meaning: "同様の関連の集まり。ER図上では【ひし形】で表される。\n例：従業員(Employees)と部門(Departments)を繋ぐ「Works_In(所属する)」関連集合。" },
+            { category: "ERモデル", word: "記述的属性 (Descriptive Attribute)", meaning: "実体ではなく「関連集合そのもの」に紐づく属性のこと。\n例：従業員がその部門にいつから配属されたかを示す「since(配属日)」属性。" },
+            { category: "ERモデル", word: "関連集合の主キー", meaning: "関連集合は、参加している実体たちの主キーの組み合わせによって一意に識別される。\n例：Works_Inのキーは、参加する実体のキーを合わせた {eid, did} となる。" },
+            { category: "ERモデル", word: "多項関連 (n項関連)", meaning: "3つ以上の実体集合を結ぶ関連のこと。\n例：Employees、Departments、Locations(勤務地)の3つを結ぶ「Works_In3」関連（ある従業員が、ある部門で、特定の勤務地で働いているという三項の結びつきを示す）。" },
+            { category: "ERモデル", word: "役割 (Role / Role Indicator)", meaning: "同一の実体集合の間に関連（自己関連）を定義する際、それぞれの参加実体がどのような立場で関わっているかを識別するためのラベル。\n例：「Reports_To(上司部下関係)」関連における「supervisor(上司)」と「subordinate(部下)」。" },
+            { category: "ERモデル", word: "1対1 関連 (1-to-1)", meaning: "キー制約の一種。実体Aの1つに対して実体Bが多くとも1つ、逆も同様に対応する関係。\nER図では、一意（高々1つ）に定まる側の実体集合から関連集合へ【矢印(→)】を引いて表現する。" },
+            { category: "ERモデル", word: "1対多 / 多対1 関連", meaning: "キー制約の一種。片方の実体がもう片方の複数の実体と対応できる関係。\n例：1つの部門に多くの従業員が属する（DepartmentsからWorks_Inへ矢印を引くと、従業員から見て部門は高々1つに決まる多対1になる）。" },
+            { category: "ERモデル", word: "多対多 関連 (Many-to-Many)", meaning: "キー制約のない最も自由な対応関係。双方の実体集合から関連集合へ矢印がない状態。\n例：従業員は複数のプロジェクトに関わり、プロジェクトには複数の従業員が関わる関係。" },
+            { category: "ERモデル", word: "全参加 (Total Participation)", meaning: "参加制約の一種。実体集合の中のすべての実体が、必ずその関連集合に少なくとも1回は参加しなければならないという強い制約。ER図では【太線】（または二重線）で表される。\n例：「すべての部門は、必ず誰か1名以上のマネージャーによって管理されていなければならない(Managesに関連)」場合、部門側を太線にする。" },
+            { category: "ERモデル", word: "部分参加 (Partial Participation)", meaning: "参加制約の一種。関連に参加していない実体が存在してもよい状態。ER図では通常の【細線】で表される。\n例：「従業員は全員がマネージャーであるとは限らない」場合、従業員側のManagesへの参加は部分参加（細線）となる。" },
+            { category: "ERモデル", word: "弱実体 (Weak Entity)", meaning: "自身の属性（列）だけでは主キーを構成できず、単独で一意に識別できない実体のこと。ER図では枠線が【二重線】で描かれる。\n例：従業員に依存する扶養家族(Dependents)。従業員IDがあって初めて誰の扶養家族か識別できる。" },
+            { category: "ERモデル", word: "識別所有者 (Identifying Owner)", meaning: "弱実体集合を一意に特定する上で必要となる、親側の実体集合のこと。弱実体と識別所有者を結ぶ関連集合も【二重線のひし形】で描き、その関係は「1対多かつ弱実体側が全参加(太線)」となる。" },
+            { category: "ERモデル", word: "部分キー (Partial Key / 識別子)", meaning: "弱実体集合において、同じ識別所有者に属する実体同士を区別するための属性。ER図内では属性名に【点線の下線】を引いて示す。\n例：扶養家族の「pname(名前)」。親の「eid」と合わせることで `{eid, pname}` として主キーになる。" },
+            { category: "ERモデル", word: "クラス階層 (ISA階層)", meaning: "実体集合における「一般化・特殊化」を表現する構造。下位クラス(subclass)は上位クラス(superclass)のすべての属性と関連への参加資格を【継承】する。ER図では三角形の中に【ISA】と書いた記号で結ぶ。" },
+            { category: "ERモデル", word: "特殊化 (Specialization)", meaning: "スーパークラスから、特定の高レベルな性質や固有の属性を持つ部分クラス(サブクラス)を切り出していく設計プロセスのこと。" },
+            { category: "ERモデル", word: "汎化 (Generalization)", meaning: "複数の実体集合の共通の性質・属性を抽出し、それらをまとめた上位のスーパークラスを定義する設計プロセスのこと。" },
+            { category: "ERモデル", word: "Overlapping 制約", meaning: "クラス階層の制約。1つの実体が、同時に複数のサブクラスに属することを許すかどうか。\nデフォルトは排他的（属さない）だが、許す場合は <code>OVERLAPS</code> と明記する。" },
+            { category: "ERモデル", word: "Covering 制約", meaning: "クラス階層の制約。スーパークラスの実体が、必ずいずれかのサブクラスに属さなければならない（全体をカバーする）かどうかを強制する規則。" },
+            { category: "ERモデル", word: "集約 (Aggregation)", meaning: "「実体集合と関連集合の結びつき（塊）」を一つの仮想的な実体集合とみなし、点線で囲むことで、他の関連集合に参加させる手法。\n三項関連では「ある関連の成立に対して、別の実体が関与する」という動的な状況を冗長性なく表現できない場合に用いられる。" },
+
+            // --- 2. 関係モデル基礎 ---
+            { category: "関係モデル基礎", word: "直積集合 (Cartesian Product)", meaning: "集合 S1, S2, ..., Sn の要素の総当たりによるすべての組み合わせからなる集合。\n数式：S1 × S2 × ... × Sn = {(x1, ..., xn) | x1 ∈ S1 ∧ ... ∧ xn ∈ Sn}" },
+            { category: "関係モデル基礎", word: "関係 (Relation / リレーション)", meaning: "数学的な定義では、いくつかのドメインの直積集合の【有限部分集合】のこと。日常的には「テーブル（表）」に相当する。" },
+            { category: "関係モデル基礎", word: "タプル (Tuple / 組)", meaning: "関係（リレーション）を構成する各要素のこと。テーブルにおける「行（レコード）」に相当する。" },
+            { category: "関係モデル基礎", word: "属性 (Attribute / 関係モデル)", meaning: "タプルの各成分につけられた名前。テーブルにおける「列（カラム）」に相当する。" },
+            { category: "関係モデル基礎", word: "次数 (Degree)", meaning: "1つの関係スキーマに含まれる属性の総数（列数）のこと。" },
+            { category: "関係モデル基礎", word: "関係スキーマ (Relation Schema)", meaning: "関係の名前と、それが持つ属性の集合による定義体のこと。R(A1, A2, ..., An) のように表記する。" },
+            { category: "関係モデル基礎", word: "関係のインスタンス", meaning: "ある特定の時点において、関係スキーマに基づいて実際にデータベース内に格納されているタプル（行）の集合（データそのもの）。" },
+            { category: "関係モデル基礎", word: "主キー制約 (一意性制約)", meaning: "整合性制約の一つ。関係内の任意の2つの異なるタプルにおいて、主キーとして指定された属性の値が完全に一致してはならない（一意に識別できなければならない）という規則。" },
+            { category: "関係モデル基礎", word: "実体整合性制約 (Entity Integrity)", meaning: "整合性制約の一つ。主キー（PK）を構成する属性の値は、決して【空値（NULL）】になってはならないという規則。値が定められていない状態を禁止する。" },
+            { category: "関係モデル基礎", word: "参照整合性制約 (Referential Integrity)", meaning: "整合性制約の一つ。関係R1の外部キー(FK)の値は、空値(NULL)である場合を除き、必ず参照先である関係R2の主キー(PK)のいずれかの値として存在していなければならないという規則。存在しない相手を指すことを禁じる。" },
+            { category: "関係モデル基礎", word: "外部キー (Foreign Key: FK)", meaning: "ある関係に含まれる属性（または属性集合）で、別の関係（あるいは同じ関係）の主キーを参照しているもののこと。テーブル間のつながりを表現する役割を持つ。" },
+
+            // --- 3. 関係代数 ---
+            { category: "関係代数", word: "和両立 (Union-Compatible)", meaning: "集合演算（和・差・共通部分）を適用するために、2つの関係が満たしていなければならない前提条件。具体的には「属性の数（次数）が一致」し、かつ「対応する列のドメイン（データ型）が同じ」であること。" },
+            { category: "関係代数", word: "和 (Union: R ∪ S)", meaning: "関係代数の集合演算。関係Rと関係Sの少なくとも一方に含まれるタプルの集合を返す演算。重複行は自動的に排除される。" },
+            { category: "関係代数", word: "差 (Difference: R - S)", meaning: "関係代数の集合演算。関係Rには含まれるが、関係Sには含まれないタプルの集合を返す演算。演算の順序によって結果が変わる。" },
+            { category: "関係代数", word: "共通部分 (Intersection: R ∩ S)", meaning: "関係代数の集合演算。関係Rと関係Sの両方に共通して含まれるタプルの集合を返す演算。" },
+            { category: "関係代数", word: "直積 (Cartesian Product: R × S)", meaning: "関係代数の集合演算。関係Rのタプルと関係Sのタプルのすべての総当たり組み合わせを生成する演算。結果の次数（列数）は Rの次数 ＋ Sの次数 になる。" },
+            { category: "関係代数", word: "選択 (Selection: σ)", meaning: "関係代数の固有演算。与えられた条件（比較演算や論理演算）を満たす【タプル（行）】のみを抽出する演算。表記： σ_条件 (R)" },
+            { category: "関係代数", word: "射影 (Projection: π)", meaning: "関係代数の固有演算。関係から指定された【属性（列）】のみを抽出し、それ以外の列を排除する演算。集合の定義に基づき、抽出後に生じた【重複タプルは自動的に除去】される。表記： π_属性リスト (R)" },
+
+            // --- 4. 関係論理 ---
+            { category: "関係論理", word: "関係論理 (Relational Calculus)", meaning: "データ操作の記述方法の一つ。目的のデータが満たすべき条件を、数学的な論理式を用いて【宣言的（Declarative）】に記述する。手続き的な関係代数と表現能力において「等価」である。" },
+            { category: "関係論理", word: "タプル関係論理", meaning: "関係論理の一種。ある次数のタプルを表す「タプル変数 t」を用いて <code>{t | Ψ(t)}</code> の形式で条件を満たすタプルの集合を記述する手法。" },
+            { category: "関係論理", word: "ドメイン関係論理", meaning: "関係論理の一種。タプル変数ではなく、各属性のドメイン（定義域）の要素を値として取る「ドメイン変数 x1, ..., xn」を用いて <code>{x1, ..., xn | Ψ(x1, ..., xn)}</code> の形式で記述する手法。" },
+            { category: "関係論理", word: "アトム (Atom)", meaning: "論理式を構成する最小の基本単位。\nタプル関係論理の例：関係Rにuが含まれることを示す <code>R(u)</code> や、属性値の比較 <code>u.A = v.B</code>、定数との比較 <code>u.A = c</code> など。" },
+            { category: "関係論理", word: "存在量化子 (∃)", meaning: "論理記号の一つ。「条件Ψ(t)を満たすタプルtが少なくとも1つ存在する」ことを表す。数式： ∃t (Ψ(t))" },
+            { category: "関係論理", word: "全称量化子 (∀)", meaning: "論理記号の一つ。「すべてのタプルtについて、条件Ψ(t)が成り立つ」ことを表す。数式： ∀t (Ψ(t))" },
+
+            // --- 5. SQL基本 ---
+            { category: "SQL基本", word: "データ操作言語 (DML)", meaning: "SQLの分類の一つ。データの追加、修正、削除、および検索（問合せ）を行うための言語要素。SELECT, INSERT, UPDATE, DELETE など。" },
+            { category: "SQL基本", word: "データ定義言語 (DDL)", meaning: "SQLの分類の一つ。データベースオブジェクト（テーブル、ビュー、インデックスなど）の構造を作成、変更、削除するための言語要素。CREATE, DROP, ALTER など。" },
+            { category: "SQL基本", word: "データ制御言語 (DCL)", meaning: "SQLの分類の一つ。トランザクションの制御（COMMIT, ROLLBACK）や、アクセス権限の制御（GRANT, REVOKE）などを行うための言語要素。" },
+            { category: "SQL基本", word: "SELECT * FROM <表名>", meaning: "指定したテーブルから「すべての列」かつ「すべての行（WHERE句がないため無条件）」を抽出するSQLの基本構文。SQLキーワードは大文字・小文字を区別しない。" },
+            { category: "SQL基本", word: "WHERE 句", meaning: "主テーブルから特定の条件を満たす行のみに絞り込む（関係代数の「選択」に相当）ための句。文字列定数はシングルクォーテーション(' ')で囲む。" },
+            { category: "SQL基本", word: "LIKE 述語", meaning: "WHERE句で使用するパターンマッチング演算子。\n<code>%</code>: 0文字以上の任意の文字列に一致。\n<code>_</code>: 任意の1文字に一致。" },
+            { category: "SQL基本", word: "BETWEEN 述語", meaning: "ある値が指定した閉区間（開始値以上、終了値以下）に含まれるかを判定する。\n例：<code>price BETWEEN 1000 AND 5000</code> は <code>price >= 1000 AND price <= 5000</code> と完全に等価。" },
+            { category: "SQL基本", word: "内部結合 (等結合)", meaning: "FROM句に複数テーブルを指定し、WHERE句で互いのキーとなる列の値を等号(=)で結びつけて突き合わせる手法。同名列は <code>テーブル名.列名</code> で区別する。" },
+            { category: "SQL基本", word: "GROUP BY 句", meaning: "指定した列の値が同じである行同士を同一のグループとしてまとめ、グループごとに集約関数を適用できるようにする構文。" },
+            { category: "SQL基本", word: "HAVING 句", meaning: "【グループ化された後の集約結果】に対して、抽出条件を適用して絞り込むための構文。個々の行を対象とするWHERE句と実行タイミング・役割が異なる。" },
+            { category: "SQL基本", word: "集約関数", meaning: "複数行のデータから1つの統計的な値を計算する関数。\n<code>COUNT(*)</code>: 行数をカウント\n<code>SUM(列)</code>: 合計\n<code>AVG(列)</code>: 平均\n<code>MAX(列) / MIN(列)</code>: 最大 / 最小" },
+
+            // --- 6. SQL応用 ---
+            { category: "SQL応用", word: "CREATE TABLE", meaning: "新しいテーブルとその列構造を定義して作成するDDL構文。\n<pre>CREATE TABLE 表名 (\n  列名 データ型 [列制約],\n  ...\n);</pre>" },
+            { category: "SQL応用", word: "DROP TABLE", meaning: "指定したテーブルの構造定義、およびそこに格納されているすべてのデータを完全に消去するDDL構文。元に戻せない。 <code>DROP TABLE 表名;</code>" },
+            { category: "SQL応用", word: "列制約 (NOT NULL / PRIMARY KEY)", meaning: "テーブル作成時に列に課す制約。\n<code>NOT NULL</code>: 空値(NULL)の挿入を禁止。\n<code>PRIMARY KEY</code>: 主キーに指定（一意かつNOT NULLが自動強制）。" },
+            { category: "SQL応用", word: "INSERT INTO", meaning: "テーブルに新しい行（データ）を挿入するDML構文。値を省略する列には <code>NULL</code> を設定するか、列名リストを明示して挿入する。" },
+            { category: "SQL応用", word: "UPDATE", meaning: "既存のデータの値を修正するDML構文。WHERE句の条件を満たす行の特定列をSET句の値に書き換える。WHERE句を省略すると【すべての行】が更新されてしまうため注意。" },
+            { category: "SQL応用", word: "DELETE FROM", meaning: "テーブルから行を削除するDML構文。WHERE句の条件を満たす行を削除する。WHERE句を省略すると、テーブル内の【すべてのデータ（全行）が削除】され空になる。" },
+            { category: "SQL応用", word: "ビュー (View)", meaning: "独自のデータを実際に保持しない、SQLの問合せ結果に基づく【仮想的なテーブル】。実テーブル（基底テーブル）のデータが更新されると、ビュー側の表示も自動的に変化する。" },
+            { category: "SQL応用", word: "自己結合 (Self-Join)", meaning: "同じ1つのテーブルを仮想的に2つの別テーブルとして扱い、互いを結合させる手法。家系図（親子関係）や上司部下関係のデータを追跡する際に多用される。" },
+            { category: "SQL応用", word: "相関名 (テーブルのエイリアス)", meaning: "自己結合など、同一のテーブル名を1つの問合せ内で複数回使用する際に、どれがどちらの役割のテーブルかを区別するために設定する別名のこと。\n例：<code>FROM Child c1, Child c2</code> の「c1」「c2」。" },
+            { category: "SQL応用", word: "相関副問合せ (Correlated Subquery)", meaning: "外側の主問合せが処理中の行の値を、内側の副問合せのWHERE条件式の中で引き継いで参照する構造の副問合せ。\n主問合せのループ1行ごとに、副問合せが動的に評価されて条件合致を判定する。" }
+        ];
+
+        let cards = [...originalCards];
+        let currentIndex = 0;
+        let isListView = false;
+
+        // DOM要素の取得
+        const card = document.getElementById('card');
+        const cardContainer = document.getElementById('cardContainer');
+        const frontCategory = document.getElementById('frontCategory');
+        const frontWord = document.getElementById('frontWord');
+        const backCategory = document.getElementById('backCategory');
+        const backTitle = document.getElementById('backTitle');
+        const backMeaning = document.getElementById('backMeaning');
+        
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const prevBtn5 = document.getElementById('prevBtn5');
+        const nextBtn5 = document.getElementById('nextBtn5');
+        const shuffleBtn = document.getElementById('shuffleBtn');
+        const toggleViewBtn = document.getElementById('toggleViewBtn');
+        const categoryFilter = document.getElementById('categoryFilter');
+        
+        const cardNumberDisplay = document.getElementById('cardNumberDisplay');
+        const currentCategoryDisplay = document.getElementById('currentCategoryDisplay');
+        const progressBar = document.getElementById('progressBar');
+        
+        const flashcardMode = document.getElementById('flashcardMode');
+        const listView = document.getElementById('listView');
+
+        // カードの更新
+        function updateCard() {
+            if (cards.length === 0) {
+                frontCategory.textContent = "-";
+                frontWord.textContent = "該当する単語がありません";
+                backCategory.textContent = "-";
+                backTitle.textContent = "データなし";
+                backMeaning.textContent = "フィルター条件を変更してください。";
+                cardNumberDisplay.textContent = "Card: 0 / 0";
+                currentCategoryDisplay.textContent = "分野: -";
+                progressBar.style.width = "0%";
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+                prevBtn5.disabled = true;
+                nextBtn5.disabled = true;
+                return;
+            }
+
+            // 一度表面に戻してからデータを書き換える（反転中の不自然な変化を防ぐ）
+            card.classList.remove('flipped');
+            
+            setTimeout(() => {
+                const currentCard = cards[currentIndex];
+                frontCategory.textContent = currentCard.category;
+                frontWord.innerHTML = currentCard.word;
+                backCategory.textContent = currentCard.category;
+                backTitle.innerHTML = currentCard.word;
+                backMeaning.innerHTML = currentCard.meaning;
+                
+                // ナビゲーション等の表示更新
+                cardNumberDisplay.textContent = `Card: ${currentIndex + 1} / ${cards.length}`;
+                currentCategoryDisplay.textContent = `分野: ${currentCard.category}`;
+                
+                const progressPercent = ((currentIndex + 1) / cards.length) * 100;
+                progressBar.style.width = `${progressPercent}%`;
+                
+                // ボタンの有効・無効化
+                prevBtn.disabled = currentIndex === 0;
+                nextBtn.disabled = currentIndex === cards.length - 1;
+                prevBtn5.disabled = currentIndex === 0;
+                nextBtn5.disabled = currentIndex === cards.length - 1;
+            }, card.classList.contains('flipped') ? 300 : 0);
+        }
+
+        // カードのクリックイベント（反転）
+        cardContainer.addEventListener('click', () => {
+            if (cards.length > 0) {
+                card.classList.toggle('flipped');
+            }
+        });
+
+        // 「次の単語」ボタン
+        nextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentIndex < cards.length - 1) {
+                currentIndex++;
+                updateCard();
+            }
+        });
+
+        // 「前の単語」ボタン
+        prevBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateCard();
+            }
+        });
+
+        // 5つ進む
+        nextBtn5.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentIndex = Math.min(currentIndex + 5, cards.length - 1);
+            updateCard();
+        });
+
+        // 5つ戻る
+        prevBtn5.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentIndex = Math.max(currentIndex - 5, 0);
+            updateCard();
+        });
+
+        // シャッフル機能
+        shuffleBtn.addEventListener('click', () => {
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+            currentIndex = 0;
+            updateCard();
+            if (isListView) renderListView();
+        });
+
+        // カテゴリフィルター機能
+        categoryFilter.addEventListener('change', (e) => {
+            const selected = e.target.value;
+            if (selected === 'all') {
+                cards = [...originalCards];
+            } else {
+                cards = originalCards.filter(c => c.category === selected);
+            }
+            currentIndex = 0;
+            updateCard();
+            if (isListView) renderListView();
+        });
+
+        // 一覧表示のレンダリング
+        function renderListView() {
+            listView.innerHTML = '';
+            if (cards.length === 0) {
+                listView.innerHTML = '<div class="list-item">該当するデータがありません。</div>';
+                return;
+            }
+            cards.forEach((c) => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `
+                    <div class="list-word">${c.word}<span class="list-category">${c.category}</span></div>
+                    <div class="meaning-text" style="margin-top:8px;">${c.meaning}</div>
+                `;
+                listView.appendChild(item);
+            });
+        }
+
+        // モード切り替え（単語帳ビュー / 一覧ビュー）
+        toggleViewBtn.addEventListener('click', () => {
+            isListView = !isListView;
+            if (isListView) {
+                flashcardMode.style.display = 'none';
+                listView.style.display = 'block';
+                toggleViewBtn.textContent = "モード切替（カード表示に戻す）";
+                renderListView();
+            } else {
+                flashcardMode.style.display = 'flex';
+                listView.style.display = 'none';
+                toggleViewBtn.textContent = "モード切替（一覧表示）";
+                updateCard();
+            }
+        });
+
+        // キーボードショートカット（PCブラウザ用操作性向上）
+        document.addEventListener('keydown', (e) => {
+            if (isListView) return;
+            if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                card.classList.toggle('flipped');
+            } else if (e.key === 'ArrowRight' && currentIndex < cards.length - 1) {
+                currentIndex++;
+                updateCard();
+            } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+                currentIndex--;
+                updateCard();
+            }
+        });
+
+        // 初期実行
+        updateCard();
+    </script>
+</body>
+</html>
