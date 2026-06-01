@@ -1,3 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DB中間試験対策 4択クイズ</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --background-color: #f5f7fa;
+            --card-color: #ffffff;
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .quiz-container {
+            background-color: var(--card-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 10px;
+        }
+
+        .progress {
+            font-size: 0.9rem;
+            color: #718096;
+            font-weight: bold;
+        }
+
+        .score {
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .question-box {
+            font-size: 1.2rem;
+            font-weight: 600;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            min-height: 80px;
+        }
+
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+            margin-bottom: 25px;
+        }
+
+        .option-btn {
+            background-color: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px 20px;
+            font-size: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            font-weight: 500;
+        }
+
+        /* iPad等でのホバー・アクティブ時の挙動 */
+        @media (hover: hover) {
+            .option-btn:hover:not([disabled]) {
+                border-color: var(--primary-color);
+                background-color: #f0f7ff;
+            }
+        }
+
+        .option-btn:active:not([disabled]) {
+            transform: scale(0.98);
+        }
+
+        /* 正解・不正解のスタイル */
+        .option-btn.correct {
+            background-color: #e8f5e9;
+            border-color: var(--success-color);
+            color: #2e7d32;
+        }
+
+        .option-btn.wrong {
+            background-color: #ffebee;
+            border-color: var(--error-color);
+            color: #c62828;
+        }
+
+        .option-btn[disabled] {
+            cursor: not-allowed;
+        }
+
+        .result-box {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            min-height: 30px;
+        }
+
+        .result-box.correct-text { color: var(--success-color); }
+        .result-box.wrong-text { color: var(--error-color); }
+
+        .next-btn {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+            transition: background-color 0.2s;
+        }
+
+        .next-btn:hover {
+            background-color: #357abd;
+        }
+
+        /* 結果画面用 */
+        .summary-box {
+            text-align: center;
+            padding: 20px 0;
+        }
+        .summary-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        .restart-btn {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container" id="quiz">
+    <div class="header">
+        <div class="progress" id="progress">Question 1/10</div>
+        <div class="score" id="score-display">Score: 0</div>
+    </div>
+    
+    <div class="question-box" id="question">問題文がここに表示されます</div>
+    
+    <div class="options-container" id="options">
+        <button class="option-btn" onclick="checkAnswer(0)">選択肢 1</button>
+        <button class="option-btn" onclick="checkAnswer(1)">選択肢 2</button>
+        <button class="option-btn" onclick="checkAnswer(2)">選択肢 3</button>
+        <button class="option-btn" onclick="checkAnswer(3)">選択肢 4</button>
+    </div>
+    
+    <div class="result-box" id="result-message"></div>
+    
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()">次の問題へ ➔</button>
+</div>
+
+<script>
+// 【重要】ここにクイズのデータを格納しています。
+// 自分で問題を追加・変更したい場合は、この配列のルール（形式）に合わせて編集してください。
 const quizData = [
     // --- ERモデル ---
     {
@@ -306,3 +500,126 @@ const quizData = [
         correct: "相関副問合せ (Correlated Subquery)"
     }
 ];
+
+let currentQuestionIndex = 0;
+let score = 0;
+let shuffledOptions = [];
+
+// クイズの初期化・開始
+function startQuiz() {
+    // 問題の順番をランダムにしたい場合はここをシャffleする処理を入れますが、
+    // まずは毎回しっかり固定パターンで復習できるようそのままにしています。
+    currentQuestionIndex = 0;
+    score = 0;
+    showQuestion();
+}
+
+// 問題を表示する
+function showQuestion() {
+    resetState();
+    
+    const currentQuestion = quizData[currentQuestionIndex];
+    
+    // ヘッダーの更新
+    document.getElementById("progress").innerText = `Question ${currentQuestionIndex + 1}/${quizData.length}`;
+    document.getElementById("score-display").innerText = `Score: ${score}`;
+    
+    // 問題文の表示
+    document.getElementById("question").innerText = currentQuestion.question;
+    
+    // 選択肢のシャッフル（毎回ボタンの配置が変わるようにする）
+    shuffledOptions = [...currentQuestion.options];
+    shuffledOptions.sort(() => Math.random() - 0.5);
+    
+    // ボタンへの割り当て
+    const optionsContainer = document.getElementById("options");
+    optionsContainer.innerHTML = "";
+    
+    shuffledOptions.forEach((option, index) => {
+        const button = document.createElement("button");
+        button.classList.add("option-btn");
+        button.innerText = option;
+        button.addEventListener("click", () => checkAnswer(option, button));
+        optionsContainer.appendChild(button);
+    });
+}
+
+// 状態のリセット（次の問題へ進むとき用）
+function resetState() {
+    document.getElementById("next-btn").style.display = "none";
+    const msg = document.getElementById("result-message");
+    msg.innerText = "";
+    msg.className = "result-box";
+}
+
+// 正誤判定
+function checkAnswer(selectedOption, clickedButton) {
+    const currentQuestion = quizData[currentQuestionIndex];
+    const allButtons = document.querySelectorAll(".option-btn");
+    const msg = document.getElementById("result-message");
+    
+    // すべてのボタンを無効化（2度押し防止）
+    allButtons.forEach(btn => btn.disabled = true);
+    
+    if (selectedOption === currentQuestion.correct) {
+        // 正解の場合
+        clickedButton.classList.add("correct");
+        msg.innerText = "正解！ 🎉";
+        msg.classList.add("correct-text");
+        score++;
+        document.getElementById("score-display").innerText = `Score: ${score}`;
+    } else {
+        // 不正解の場合
+        clickedButton.classList.add("wrong");
+        msg.innerText = `残念！ ❌ 正解は「${currentQuestion.correct}」`;
+        msg.classList.add("wrong-text");
+        
+        // 正解のボタンをハイライトしてあげる
+        allButtons.forEach(btn => {
+            if (btn.innerText === currentQuestion.correct) {
+                btn.classList.add("correct");
+            }
+        });
+    }
+    
+    // 「次の問題へ」ボタンを表示
+    document.getElementById("next-btn").style.display = "block";
+}
+
+// 次の問題に進む、または終了画面
+function nextQuestion() {
+    currentQuestionIndex++;
+    
+    if (currentQuestionIndex < quizData.length) {
+        showQuestion();
+    } else {
+        showSummary();
+    }
+}
+
+// 結果発表画面
+function showSummary() {
+    const quizContainer = document.getElementById("quiz");
+    const accuracy = Math.round((score / quizData.length) * 100);
+    
+    quizContainer.innerHTML = `
+        <div class="summary-box">
+            <div class="summary-title"> 🎉 テスト終了！ 🎉</div>
+            <p style="font-size: 1.2rem; margin: 20px 0;">
+                あなたのスコア: <strong>${score} / ${quizData.length}</strong> 問題<br>
+                （正解率: ${accuracy}%）
+            </p>
+            <p style="color: #718096; font-size: 0.9rem; line-height: 1.5;">
+                ${accuracy === 100 ? '完璧です！中間テストは貰いましたね！' : '間違えたところを講義資料で復習して、満点を目指しましょう！'}
+            </p>
+            <button class="restart-btn" onclick="window.location.reload()">もう一度挑戦する</button>
+        </div>
+    `;
+}
+
+// アプリ起動
+startQuiz();
+</script>
+
+</body>
+</html>
